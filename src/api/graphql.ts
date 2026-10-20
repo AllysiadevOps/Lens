@@ -20,6 +20,7 @@ import type { OracleAdapter } from '../ingest/oracles/adapter'
 import { compareOracles } from '../services/oracleComparison'
 import { priceEmitter, PRICE_PUBLISHED, type PricePublishedEvent } from '../events'
 import { HISTORY_INTERVAL_SECONDS, MAX_HISTORY_POINTS } from './history'
+import { getMaxGraphQLQueryDepth, queryDepthValidationRules } from './queryDepth'
 
 const WINDOW_SECONDS: Record<string, number> = {
   ...HISTORY_INTERVAL_SECONDS,
@@ -526,10 +527,20 @@ function operationLabel(name: string | null | undefined, type: string | null | u
   return `${safeType}:${safeName}`
 }
 
-export async function registerGraphQL(server: FastifyInstance) {
-  await server.register(mercurius, {
+export async function registerGraphQL(app: FastifyInstance) {
+  const maxQueryDepth = getMaxGraphQLQueryDepth()
+
+  await app.register(mercurius, {
     schema,
     resolvers,
+    graphiql: true,
+    // Mercurius 16.9.0 supplies the selected operation name to this callback.
+    // Its built-in queryDepth option neither expands fragments nor distinguishes
+    // an unselected operation in a multi-operation document. A callback cannot
+    // be used with Mercurius's document cache, so disable that cache rather
+    // than weakening the operation-aware validation policy.
+    cache: false,
+    validationRules: ({ operationName }) => queryDepthValidationRules(maxQueryDepth, operationName),
     path: '/graphql',
     subscription: true,
     graphiqlEndpoint: '/graphql',
@@ -555,5 +566,5 @@ export async function registerGraphQL(server: FastifyInstance) {
     },
   })
 
-  bridgePriceEvents(server)
+  bridgePriceEvents(app)
 }
