@@ -107,7 +107,7 @@ describe('aggregateRefresh runs once per enabled network', () => {
     expect(workers.map(w => w.name)).toEqual(['testnet:aggregate-refresh', 'mainnet:aggregate-refresh'])
   })
 
-  it('schedules that network&#8217;s pairs, not the active network&#8217;s', () => {
+  it('schedules that network’s pairs, not the active network’s', async () => {
     const mainnetQueue = createAggregateQueue('mainnet')
     const testnetQueue = createAggregateQueue('testnet')
 

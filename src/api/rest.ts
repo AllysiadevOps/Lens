@@ -504,8 +504,7 @@ export async function registerRESTRoutes(app: FastifyInstance) {
       ) {
         return reply.status(400).send({ error: 'thresholds must be positive numbers and liquidityFraction must be between 0 and 1' })
       }
-
-      const impact = await getImpact(pair.pairKey, { thresholds, liquidityFraction }, network)
+      const impact = await getImpact(pair.pairKey, { thresholds, liquidityFraction })
       if (!impact) return reply.status(404).send({ error: `No AMM liquidity available for ${assetA}/${assetB}` })
       return { assetA: pair.assetA.code, assetB: pair.assetB.code, pairKey: pair.pairKey, ...impact }
     }
