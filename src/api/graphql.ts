@@ -1,12 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import { ErrorWithProps } from 'mercurius'
-import {
-  price_requests_total,
-  graphql_operations_total,
-  graphql_resolver_duration_seconds,
-  graphql_errors_total,
-  active_subscriptions,
-} from '../metrics'
+import { price_requests_total } from '../metrics'
+import { graphql_errors_total, graphql_resolver_duration_seconds, graphql_operations_total, active_subscriptions } from '../metrics'
 import mercurius, { withFilter, defaultErrorFormatter, type MercuriusContext } from 'mercurius'
 import { GraphQLError, type ExecutionResult } from 'graphql'
 import { randomUUID } from 'node:crypto'
@@ -590,11 +585,11 @@ const resolvers = {
       'getBestRoute',
       async (
         _: unknown,
-        { assetA, assetB, Amount }: { assetA: string; assetB: string; amount: number }
+        { assetA, assetB, amount }: { assetA: string; assetB: string; amount: number }
       ) => {
         const pair = findPair(assetA, assetB)
         if (!pair) return null
-        return getBestRoute(pair.assetA, pair.assetB, pair.pairKey, Amount)
+        return getBestRoute(pair.assetA, pair.assetB, pair.pairKey, amount)
       },
     ),
 
@@ -1010,7 +1005,7 @@ export async function registerGraphQL(app: FastifyInstance) {
   // topic for its pair and network. Mercurius wraps the payload under the
   // subscription field name so resolvers receive `{ priceUpdated: <event> }`.
   const onPricePublished = (event: PricePublishedEvent) => {
-    app.graphql.pubsub.publish({
+    (app as unknown as { pubsub: { publish(args: { topic: string; payload: unknown }): unknown } }).pubsub.publish({
       topic: priceTopic(event.pair, event.network),
       payload: { priceUpdated: event },
     })
